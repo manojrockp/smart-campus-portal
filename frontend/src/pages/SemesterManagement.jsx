@@ -19,8 +19,8 @@ const SemesterManagement = () => {
     endDate: ''
   })
   const [activeYear, setActiveYear] = useState(null)
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
-  const [filterYear, setFilterYear] = useState('')
+
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear())
   const [courseFormData, setCourseFormData] = useState({
     name: '',
     code: '',
@@ -33,20 +33,20 @@ const SemesterManagement = () => {
     ['semesters', filterYear], 
     async () => {
       const params = filterYear ? `?year=${filterYear}` : ''
-      const response = await api.get(`/semesters${params}`)
+      const response = await api.get(`/api/semesters${params}`)
       return response.data
     }
   )
 
   // Get academic years
   const { data: academicYears } = useQuery('academicYears', async () => {
-    const response = await api.get('/semesters/years')
+    const response = await api.get('/api/semesters/years')
     return response.data
   })
 
   // Get active year
   const { data: activeYearData } = useQuery('activeYear', async () => {
-    const activeYear = await api.get('/semesters/years')
+    const activeYear = await api.get('/api/semesters/years')
     return activeYear.data.find(y => y.isActive)
   })
 
@@ -55,7 +55,7 @@ const SemesterManagement = () => {
     ['courses', expandedSemester],
     async () => {
       if (!expandedSemester) return []
-      const response = await api.get(`/courses/semester/${expandedSemester}`)
+      const response = await api.get(`/api/courses/semester/${expandedSemester}`)
       return response.data
     },
     { enabled: !!expandedSemester }
@@ -65,9 +65,9 @@ const SemesterManagement = () => {
   const saveMutation = useMutation(
     async (data) => {
       if (editingSemester) {
-        return await api.put(`/semesters/${editingSemester.id}`, data)
+        return await api.put(`/api/semesters/${editingSemester.id}`, data)
       } else {
-        return await api.post('/semesters', data)
+        return await api.post('/api/semesters', data)
       }
     },
     {
@@ -86,7 +86,7 @@ const SemesterManagement = () => {
 
   // Delete semester
   const deleteMutation = useMutation(
-    async (id) => await api.delete(`/semesters/${id}`),
+    async (id) => await api.delete(`/api/semesters/${id}`),
     {
       onSuccess: () => {
         queryClient.invalidateQueries('semesters')
@@ -100,7 +100,7 @@ const SemesterManagement = () => {
 
   // Activate year
   const activateYearMutation = useMutation(
-    async (year) => await api.post(`/semesters/years/${year}/activate`),
+    async (year) => await api.post(`/api/semesters/years/${year}/activate`),
     {
       onSuccess: () => {
         queryClient.invalidateQueries('academicYears')
@@ -117,7 +117,7 @@ const SemesterManagement = () => {
 
   // Create course
   const createCourseMutation = useMutation(
-    async (courseData) => await api.post('/courses', { ...courseData, semesterId: selectedSemesterId }),
+    async (courseData) => await api.post('/api/courses', { ...courseData, semesterId: selectedSemesterId }),
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['courses', expandedSemester])
@@ -134,7 +134,7 @@ const SemesterManagement = () => {
 
   // Delete course
   const deleteCourseMutation = useMutation(
-    async (courseId) => await api.delete(`/courses/${courseId}`),
+    async (courseId) => await api.delete(`/api/courses/${courseId}`),
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['courses', expandedSemester])
@@ -151,7 +151,7 @@ const SemesterManagement = () => {
     setFormData({
       name: '',
       code: '',
-      year: selectedYear,
+      year: new Date().getFullYear(),
       startDate: '',
       endDate: ''
     })
@@ -171,6 +171,40 @@ const SemesterManagement = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    
+    // Validate dates
+    const startDate = new Date(formData.startDate)
+    const endDate = new Date(formData.endDate)
+    
+    if (startDate >= endDate) {
+      toast.error('End date must be after start date')
+      return
+    }
+    
+    // Check for duplicate semester in same year
+    const duplicate = semesters?.find(sem => {
+      if (editingSemester && sem.id === editingSemester.id) return false
+      return sem.year === formData.year && (sem.name === formData.name || sem.code === formData.code)
+    })
+    
+    if (duplicate) {
+      toast.error(`Semester "${duplicate.name}" already exists in ${formData.year}`)
+      return
+    }
+    
+    // Check for overlapping semesters
+    const overlapping = semesters?.find(sem => {
+      if (editingSemester && sem.id === editingSemester.id) return false
+      const semStart = new Date(sem.startDate)
+      const semEnd = new Date(sem.endDate)
+      return (startDate <= semEnd && endDate >= semStart)
+    })
+    
+    if (overlapping) {
+      toast.error(`Dates overlap with ${overlapping.name}`)
+      return
+    }
+    
     saveMutation.mutate(formData)
   }
 
@@ -228,28 +262,12 @@ const SemesterManagement = () => {
               })}
             </select>
           </div>
-          <div className="flex items-center space-x-2">
-            <label className="text-sm font-medium text-gray-700">Add to Year:</label>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="form-input py-2 px-3 text-sm min-w-[100px]"
-            >
-              {[...Array(5)].map((_, i) => {
-                const year = new Date().getFullYear() + i - 2;
-                return (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
+
           <button
             onClick={() => {
               setShowForm(true)
               setEditingSemester(null)
-              setFormData(prev => ({ ...prev, year: selectedYear }))
+              resetForm()
             }}
             className="btn-primary flex items-center"
           >
