@@ -1,0 +1,311 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  password   String
+  firstName  String
+  lastName   String
+  role       Role
+  studentId  String?  @unique
+  employeeId String?  @unique
+  section    String?  // A, B, C, etc.
+  year       Int?     // 1, 2, 3, 4 for academic year
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  attendanceRecords Attendance[]
+  assignments       Assignment[] @relation("AssignmentCreator")
+  submissions       Submission[]
+  notices           Notice[]
+  sentMessages      Message[]    @relation("MessageSender")
+  receivedMessages  Message[]    @relation("MessageReceiver")
+  enrollments       Enrollment[]
+  predictions       Prediction[]
+  facultyCourses    FacultyCourse[]
+  studentLeaves     LeaveApplication[] @relation("StudentLeaves")
+  facultyApprovedLeaves LeaveApplication[] @relation("FacultyApprovedLeaves")
+  adminApprovedLeaves   LeaveApplication[] @relation("AdminApprovedLeaves")
+
+  @@map("users")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  description String?
+  credits     Int
+  semesterId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  semester        Semester?      @relation(fields: [semesterId], references: [id])
+  enrollments     Enrollment[]
+  assignments     Assignment[]
+  attendance      Attendance[]
+  timetable       Timetable[]
+  facultyCourses  FacultyCourse[]
+
+  @@map("courses")
+}
+
+model Semester {
+  id        String   @id @default(cuid())
+  name      String   // e.g., "Fall 2025", "Spring 2026"
+  code      String   @unique // e.g., "FALL2025", "SPRING2026"
+  year      Int      // e.g., 2025, 2026
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  enrollments      Enrollment[]
+  courses          Course[]
+  attendance       Attendance[]
+  leaveApplications LeaveApplication[]
+
+  @@map("semesters")
+}
+
+model AcademicYear {
+  id        String   @id @default(cuid())
+  year      Int      @unique // e.g., 2025
+  name      String   // e.g., "2025-2026"
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("academic_years")
+}
+
+model Enrollment {
+  id         String  @id @default(cuid())
+  userId     String
+  courseId   String
+  semesterId String?
+  createdAt  DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id])
+  course   Course    @relation(fields: [courseId], references: [id])
+  semester Semester? @relation(fields: [semesterId], references: [id])
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model Attendance {
+  id         String          @id @default(cuid())
+  userId     String
+  courseId   String
+  semesterId String?
+  date       DateTime
+  status     AttendanceStatus
+  createdAt  DateTime        @default(now())
+
+  user     User      @relation(fields: [userId], references: [id])
+  course   Course    @relation(fields: [courseId], references: [id])
+  semester Semester? @relation(fields: [semesterId], references: [id])
+
+  @@unique([userId, courseId, date])
+  @@map("attendance")
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  courseId    String
+  creatorId   String
+  dueDate     DateTime
+  maxMarks    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator     User         @relation("AssignmentCreator", fields: [creatorId], references: [id])
+  course      Course       @relation(fields: [courseId], references: [id])
+  submissions Submission[]
+
+  @@map("assignments")
+}
+
+model Submission {
+  id           String           @id @default(cuid())
+  assignmentId String
+  studentId    String
+  content      String?
+  filePath     String?
+  marks        Int?
+  feedback     String?
+  status       SubmissionStatus @default(SUBMITTED)
+  submittedAt  DateTime         @default(now())
+  gradedAt     DateTime?
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  student    User       @relation(fields: [studentId], references: [id])
+
+  @@unique([assignmentId, studentId])
+  @@map("submissions")
+}
+
+model Notice {
+  id        String      @id @default(cuid())
+  title     String
+  content   String
+  priority  Priority    @default(MEDIUM)
+  authorId  String
+  targetRole Role?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  author User @relation(fields: [authorId], references: [id])
+
+  @@map("notices")
+}
+
+model Message {
+  id         String      @id @default(cuid())
+  content    String
+  senderId   String
+  receiverId String
+  chatType   ChatType    @default(PRIVATE)
+  roomId     String?
+  createdAt  DateTime    @default(now())
+
+  sender   User @relation("MessageSender", fields: [senderId], references: [id])
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id])
+
+  @@map("messages")
+}
+
+model Timetable {
+  id        String   @id @default(cuid())
+  courseId  String
+  dayOfWeek Int      // 0-6 (Sunday-Saturday)
+  startTime String   // HH:MM format
+  endTime   String   // HH:MM format
+  room      String
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@map("timetable")
+}
+
+model Prediction {
+  id               String   @id @default(cuid())
+  studentId        String
+  courseId         String?
+  predictedGrade   String
+  riskLevel        RiskLevel
+  attendanceRate   Float
+  assignmentScore  Float
+  confidence       Float
+  recommendations  String[]
+  createdAt        DateTime @default(now())
+
+  student User @relation(fields: [studentId], references: [id])
+
+  @@map("predictions")
+}
+
+enum Role {
+  ADMIN
+  FACULTY
+  STUDENT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  GRADED
+  LATE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ChatType {
+  PRIVATE
+  GROUP
+}
+
+model FacultyCourse {
+  id        String @id @default(cuid())
+  facultyId String
+  courseId  String
+  createdAt DateTime @default(now())
+
+  faculty User   @relation(fields: [facultyId], references: [id])
+  course  Course @relation(fields: [courseId], references: [id])
+
+  @@unique([facultyId, courseId])
+  @@map("faculty_courses")
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model LeaveApplication {
+  id                  String      @id @default(cuid())
+  studentId           String
+  semesterId          String?
+  startDate           DateTime
+  endDate             DateTime
+  reason              String
+  leaveType           LeaveType
+  status              LeaveStatus @default(PENDING)
+  facultyStatus       String?
+  adminStatus         String?
+  facultyApprovedById String?
+  adminApprovedById   String?
+  facultyApprovedAt   DateTime?
+  adminApprovedAt     DateTime?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  student           User      @relation("StudentLeaves", fields: [studentId], references: [id])
+  semester          Semester? @relation(fields: [semesterId], references: [id])
+  approvedByFaculty User?     @relation("FacultyApprovedLeaves", fields: [facultyApprovedById], references: [id])
+  approvedByAdmin   User?     @relation("AdminApprovedLeaves", fields: [adminApprovedById], references: [id])
+
+  @@map("leave_applications")
+}
+
+enum LeaveType {
+  SICK
+  PERSONAL
+  EMERGENCY
+  MEDICAL
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  FACULTY_APPROVED
+  APPROVED
+  REJECTED
+}

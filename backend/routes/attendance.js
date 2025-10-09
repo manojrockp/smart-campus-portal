@@ -1,0 +1,110 @@
+const express = require('express');
+const { PrismaClient } = require('@prisma/client');
+const { auth, authorize } = require('../middleware/auth');
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+// Mark attendance (Faculty only)
+router.post('/mark', auth, authorize('FACULTY', 'ADMIN'), async (req, res) => {
+  try {
+    const { courseId, studentIds, date, status } = req.body;
+
+    // Get course to find semester
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { semesterId: true }
+    });
+
+    const attendanceRecords = await Promise.all(
+      studentIds.map(studentId =>
+        prisma.attendance.upsert({
+          where: {
+            userId_courseId_date: {
+              userId: studentId,
+              courseId,
+              date: new Date(date)
+            }
+          },
+          update: { status },
+          create: {
+            userId: studentId,
+            courseId,
+            semesterId: course?.semesterId,
+            date: new Date(date),
+            status
+          }
+        })
+      )
+    );
+
+    res.json({ message: 'Attendance marked successfully', records: attendanceRecords });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get attendance for student
+router.get('/student/:studentId', auth, async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { courseId, semesterId } = req.query;
+
+    const whereClause = { userId: studentId };
+    if (courseId) whereClause.courseId = courseId;
+    if (semesterId) whereClause.semesterId = semesterId;
+
+    const attendance = await prisma.attendance.findMany({
+      where: whereClause,
+      include: {
+        course: { select: { name: true, code: true } },
+        semester: { select: { name: true, code: true } }
+      },
+      orderBy: { date: 'desc' }
+    });
+
+    // Calculate attendance percentage
+    const totalClasses = attendance.length;
+    const presentClasses = attendance.filter(a => a.status === 'PRESENT').length;
+    const attendancePercentage = totalClasses > 0 ? (presentClasses / totalClasses) * 100 : 0;
+
+    res.json({
+      attendance,
+      stats: {
+        totalClasses,
+        presentClasses,
+        absentClasses: totalClasses - presentClasses,
+        attendancePercentage: Math.round(attendancePercentage * 100) / 100
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get attendance by course (Faculty)
+router.get('/course/:courseId', auth, authorize('FACULTY', 'ADMIN'), async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { date, semesterId } = req.query;
+
+    const whereClause = { courseId };
+    if (date) whereClause.date = new Date(date);
+    if (semesterId) whereClause.semesterId = semesterId;
+
+    const attendance = await prisma.attendance.findMany({
+      where: whereClause,
+      include: {
+        user: { select: { firstName: true, lastName: true, studentId: true } },
+        semester: { select: { name: true, code: true } }
+      },
+      orderBy: { date: 'desc' }
+    });
+
+    res.json(attendance);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+module.exports = router;
