@@ -45,7 +45,7 @@ app.use(helmet({
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ["https://smartcampus-git-main-manojs-projects-87d0f296.vercel.app", process.env.CORS_ORIGIN]
+    ? ["https://smartcampus-two.vercel.app", "https://smartcampus-git-main-manojs-projects-87d0f296.vercel.app", process.env.CORS_ORIGIN]
     : ["http://localhost:3000", "http://localhost:5173"],
   credentials: true
 }));
