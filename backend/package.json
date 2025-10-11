@@ -7,7 +7,7 @@
     "start": "node src/server.js",
     "prod": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "build": "npm install && npx prisma generate",
+    "build": "npm install && npx prisma generate --no-engine",
     "migrate": "npx prisma migrate deploy && npm run seed",
     "seed": "node src/scripts/seedProductionData.js",
     "render-build": "npm install && npx prisma generate && npx prisma migrate deploy",
@@ -43,5 +43,8 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
+  },
+  "prisma": {
+    "binaryTargets": ["native", "linux-musl", "debian-openssl-1.1.x"]
   }
 }
