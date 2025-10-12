@@ -93,7 +93,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// Health check endpoint
+// Health check endpoint - updated for CORS fix
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
