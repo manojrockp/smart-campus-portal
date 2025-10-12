@@ -2,21 +2,14 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
-RUN npm ci --only=production
-
-# Generate Prisma client
+RUN npm install
 RUN npx prisma generate
 
-# Copy source code
 COPY . .
 
-# Expose port
-EXPOSE 5000
+EXPOSE 8080
 
-# Start the application
-CMD ["npm", "run", "prod"]
+CMD ["npm", "start"]

@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "npm install && npx prisma generate",
   "builds": [
     {
       "src": "src/server.js",
@@ -12,8 +11,5 @@
       "src": "/(.*)",
       "dest": "src/server.js"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  ]
 }
