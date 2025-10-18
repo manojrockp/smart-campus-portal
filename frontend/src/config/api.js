@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configure API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://smart-campus-backend-w37b.onrender.com';
 
 // Create axios instance
 const api = axios.create({
@@ -40,5 +40,7 @@ api.interceptors.response.use(
 
 // Set default axios configuration
 axios.defaults.baseURL = API_BASE_URL;
+
+console.log('API Base URL:', API_BASE_URL);
 
 export default api;
