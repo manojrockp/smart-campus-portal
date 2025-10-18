@@ -5,6 +5,8 @@ import { Plus, X, BookOpen, User } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 
+// Faculty Assignments - Updated API endpoints
+
 const FacultyAssignments = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
