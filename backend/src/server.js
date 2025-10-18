@@ -21,6 +21,7 @@ const passwordResetRoutes = require('./routes/password-reset');
 const leaveRoutes = require('./routes/leaves');
 const chatRoutes = require('./routes/chat');
 const analyticsRoutes = require('./routes/analytics');
+const seedRoutes = require('./routes/seed');
 const { runSemesterTransition } = require('./jobs/semesterTransition');
 
 const app = express();
@@ -79,6 +80,7 @@ app.use('/api/password-reset', passwordResetRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/seed', seedRoutes);
 
 // Socket.io for real-time features
 io.on('connection', (socket) => {
