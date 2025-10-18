@@ -14,6 +14,7 @@ const attendanceRoutes = require('./routes/attendance');
 const assignmentRoutes = require('./routes/assignments');
 const facultyCoursesRoutes = require('./routes/faculty-courses');
 const semesterRoutes = require('./routes/semesters');
+const healthRoutes = require('./routes/health');
 
 const noticeRoutes = require('./routes/notices');
 const passwordResetRoutes = require('./routes/password-reset');
@@ -69,6 +70,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/faculty-courses', facultyCoursesRoutes);
 app.use('/api/semesters', semesterRoutes);
+app.use('/health', healthRoutes);
 
 app.use('/api/notices', noticeRoutes);
 app.use('/api/password-reset', passwordResetRoutes);

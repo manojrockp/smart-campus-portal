@@ -1,46 +1,48 @@
 #!/bin/bash
 
-# Smart Campus Portal Deployment Script
-echo "🚀 Starting Smart Campus Portal Deployment..."
+# Smart Campus Portal - Production Deployment Script
 
-# Set environment
-export NODE_ENV=production
+set -e
 
-# Create necessary directories
-mkdir -p logs uploads nginx/ssl
+echo "🚀 Starting Smart Campus Portal deployment..."
 
-# Stop existing containers
-echo "📦 Stopping existing containers..."
-docker-compose -f docker-compose.prod.yml down
+# Check if required environment variables are set
+if [ -z "$DATABASE_URL" ]; then
+    echo "❌ DATABASE_URL environment variable is required"
+    exit 1
+fi
 
-# Build and start services
-echo "🔨 Building and starting services..."
-docker-compose -f docker-compose.prod.yml up --build -d
+if [ -z "$JWT_SECRET" ]; then
+    echo "❌ JWT_SECRET environment variable is required"
+    exit 1
+fi
 
-# Wait for database to be ready
-echo "⏳ Waiting for database to be ready..."
-sleep 30
+# Build and push Docker images
+echo "📦 Building Docker images..."
 
-# Run database migrations
-echo "🗄️ Running database migrations..."
-docker-compose -f docker-compose.prod.yml exec app npx prisma migrate deploy
+# Build backend
+docker build -t smart-campus-backend:latest ./backend
+docker tag smart-campus-backend:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/smart-campus-backend:latest
 
-# Generate Prisma client
-echo "🔧 Generating Prisma client..."
-docker-compose -f docker-compose.prod.yml exec app npx prisma generate
+# Build frontend
+docker build -t smart-campus-frontend:latest ./frontend
+docker tag smart-campus-frontend:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/smart-campus-frontend:latest
 
-# Seed initial data (optional)
-echo "🌱 Seeding initial data..."
-docker-compose -f docker-compose.prod.yml exec app npm run seed
+# Login to ECR
+echo "🔐 Logging into AWS ECR..."
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-# Check service health
-echo "🏥 Checking service health..."
-sleep 10
-curl -f http://localhost:5000/health || echo "⚠️ Health check failed"
+# Push images
+echo "⬆️ Pushing images to ECR..."
+docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/smart-campus-backend:latest
+docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/smart-campus-frontend:latest
 
-echo "✅ Deployment completed!"
-echo "🌐 Application available at: http://localhost"
-echo "📊 API available at: http://localhost/api"
+# Deploy with Terraform
+echo "🏗️ Deploying infrastructure with Terraform..."
+cd terraform
+terraform init
+terraform plan
+terraform apply -auto-approve
 
-# Show running containers
-docker-compose -f docker-compose.prod.yml ps
+echo "✅ Deployment completed successfully!"
+echo "🌐 Your Smart Campus Portal is now live!"

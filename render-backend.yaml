@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: smart-campus-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    branch: main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        value: mongodb+srv://404manojkumarp404_db_user:qyvP0nmuQRKltJLb@smart-campus-cluster.qylcmzc.mongodb.net/smart_campus?retryWrites=true&w=majority&appName=smart-campus-cluster
+      - key: JWT_SECRET
+        value: mySuperSecretKey123!@#ProductionVersion2024ForRender
+      - key: JWT_EXPIRE
+        value: 7d

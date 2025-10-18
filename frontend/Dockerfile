@@ -1,4 +1,4 @@
-FROM node:18-alpine as build
+FROM node:18-bullseye AS builder
 
 WORKDIR /app
 
@@ -6,22 +6,22 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the app
 RUN npm run build
 
 # Production stage
-FROM nginx:alpine
+FROM nginx:stable-alpine
 
-# Copy built files
-COPY --from=build /app/dist /usr/share/nginx/html
+# Copy built app
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
 

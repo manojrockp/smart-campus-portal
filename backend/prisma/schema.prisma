@@ -1,140 +1,133 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id                    String             @id @default(cuid())
-  email                 String             @unique
-  password              String
-  firstName             String
-  lastName              String
-  role                  Role
-  studentId             String?            @unique
-  employeeId            String?            @unique
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  section               String?
-  year                  Int?
-  assignments           Assignment[]       @relation("AssignmentCreator")
-  attendanceRecords     Attendance[]
-  enrollments           Enrollment[]
-  facultyCourses        FacultyCourse[]
-  adminApprovedLeaves   LeaveApplication[] @relation("AdminApprovedLeaves")
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  email      String   @unique
+  password   String
+  firstName  String
+  lastName   String
+  role       Role
+  studentId  String?  @unique
+  employeeId String?  @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  attendanceRecords Attendance[]
+  assignments       Assignment[] @relation("AssignmentCreator")
+  submissions       Submission[]
+  notices           Notice[]
+  sentMessages      Message[]    @relation("MessageSender")
+  receivedMessages  Message[]    @relation("MessageReceiver")
+  enrollments       Enrollment[]
+  predictions       Prediction[]
+  facultyCourses    FacultyCourse[]
+  studentLeaves     LeaveApplication[] @relation("StudentLeaves")
   facultyApprovedLeaves LeaveApplication[] @relation("FacultyApprovedLeaves")
-  studentLeaves         LeaveApplication[] @relation("StudentLeaves")
-  receivedMessages      Message[]          @relation("MessageReceiver")
-  sentMessages          Message[]          @relation("MessageSender")
-  notices               Notice[]
-  predictions           Prediction[]
-  submissions           Submission[]
+  adminApprovedLeaves   LeaveApplication[] @relation("AdminApprovedLeaves")
 
   @@map("users")
 }
 
 model Course {
-  id             String          @id @default(cuid())
-  name           String
-  code           String          @unique
-  description    String?
-  credits        Int
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  semesterId     String?
-  assignments    Assignment[]
-  attendance     Attendance[]
-  semester       Semester?       @relation(fields: [semesterId], references: [id])
-  enrollments    Enrollment[]
-  facultyCourses FacultyCourse[]
-  timetable      Timetable[]
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  code        String   @unique
+  description String?
+  credits     Int
+  semesterId  String?  @db.ObjectId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  semester        Semester?      @relation(fields: [semesterId], references: [id])
+  enrollments     Enrollment[]
+  assignments     Assignment[]
+  attendance      Attendance[]
+  timetable       Timetable[]
+  facultyCourses  FacultyCourse[]
 
   @@map("courses")
 }
 
 model Semester {
-  id                String             @id @default(cuid())
-  name              String
-  code              String             @unique
-  startDate         DateTime
-  endDate           DateTime
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  year              Int
-  attendance        Attendance[]
-  courses           Course[]
-  enrollments       Enrollment[]
-  leaveApplications LeaveApplication[]
-
-  @@map("semesters")
-}
-
-model AcademicYear {
-  id        String   @id @default(cuid())
-  year      Int      @unique
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
+  code      String   @unique
+  startDate DateTime
+  endDate   DateTime
   isActive  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("academic_years")
+  // Relations
+  enrollments Enrollment[]
+  courses     Course[]
+  attendance  Attendance[]
+
+  @@map("semesters")
 }
 
 model Enrollment {
-  id         String    @id @default(cuid())
-  userId     String
-  courseId   String
-  createdAt  DateTime  @default(now())
-  semesterId String?
-  course     Course    @relation(fields: [courseId], references: [id])
-  semester   Semester? @relation(fields: [semesterId], references: [id])
-  user       User      @relation(fields: [userId], references: [id])
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  courseId   String   @db.ObjectId
+  semesterId String?  @db.ObjectId
+  createdAt  DateTime @default(now())
 
-  @@unique([userId, courseId])
+  user     User      @relation(fields: [userId], references: [id])
+  course   Course    @relation(fields: [courseId], references: [id])
+  semester Semester? @relation(fields: [semesterId], references: [id])
+
   @@map("enrollments")
 }
 
 model Attendance {
-  id         String           @id @default(cuid())
-  userId     String
-  courseId   String
+  id         String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String           @db.ObjectId
+  courseId   String           @db.ObjectId
+  semesterId String?          @db.ObjectId
   date       DateTime
   status     AttendanceStatus
   createdAt  DateTime         @default(now())
-  semesterId String?
-  course     Course           @relation(fields: [courseId], references: [id])
-  semester   Semester?        @relation(fields: [semesterId], references: [id])
-  user       User             @relation(fields: [userId], references: [id])
 
-  @@unique([userId, courseId, date])
+  user     User      @relation(fields: [userId], references: [id])
+  course   Course    @relation(fields: [courseId], references: [id])
+  semester Semester? @relation(fields: [semesterId], references: [id])
+
   @@map("attendance")
 }
 
 model Assignment {
-  id          String       @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String
-  courseId    String
-  creatorId   String
+  courseId    String   @db.ObjectId
+  creatorId   String   @db.ObjectId
   dueDate     DateTime
   maxMarks    Int
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  course      Course       @relation(fields: [courseId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   creator     User         @relation("AssignmentCreator", fields: [creatorId], references: [id])
+  course      Course       @relation(fields: [courseId], references: [id])
   submissions Submission[]
 
   @@map("assignments")
 }
 
 model Submission {
-  id           String           @id @default(cuid())
-  assignmentId String
-  studentId    String
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
+  assignmentId String           @db.ObjectId
+  studentId    String           @db.ObjectId
   content      String?
   filePath     String?
   marks        Int?
@@ -142,85 +135,89 @@ model Submission {
   status       SubmissionStatus @default(SUBMITTED)
   submittedAt  DateTime         @default(now())
   gradedAt     DateTime?
-  assignment   Assignment       @relation(fields: [assignmentId], references: [id])
-  student      User             @relation(fields: [studentId], references: [id])
 
-  @@unique([assignmentId, studentId])
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  student    User       @relation(fields: [studentId], references: [id])
+
   @@map("submissions")
 }
 
 model Notice {
-  id         String   @id @default(cuid())
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
   title      String
   content    String
   priority   Priority @default(MEDIUM)
-  authorId   String
+  authorId   String   @db.ObjectId
   targetRole Role?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  author     User     @relation(fields: [authorId], references: [id])
+
+  author User @relation(fields: [authorId], references: [id])
 
   @@map("notices")
 }
 
 model Message {
-  id         String   @id @default(cuid())
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
   content    String
-  senderId   String
-  receiverId String
+  senderId   String   @db.ObjectId
+  receiverId String   @db.ObjectId
   chatType   ChatType @default(PRIVATE)
   roomId     String?
   createdAt  DateTime @default(now())
-  receiver   User     @relation("MessageReceiver", fields: [receiverId], references: [id])
-  sender     User     @relation("MessageSender", fields: [senderId], references: [id])
+
+  sender   User @relation("MessageSender", fields: [senderId], references: [id])
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id])
 
   @@map("messages")
 }
 
 model Timetable {
-  id        String   @id @default(cuid())
-  courseId  String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  courseId  String   @db.ObjectId
   dayOfWeek Int
   startTime String
   endTime   String
   room      String
   createdAt DateTime @default(now())
-  course    Course   @relation(fields: [courseId], references: [id])
+
+  course Course @relation(fields: [courseId], references: [id])
 
   @@map("timetable")
 }
 
 model Prediction {
-  id              String    @id @default(cuid())
-  studentId       String
-  courseId        String?
-  predictedGrade  String
-  riskLevel       RiskLevel
-  attendanceRate  Float
-  assignmentScore Float
-  confidence      Float
-  recommendations String[]
-  createdAt       DateTime  @default(now())
-  student         User      @relation(fields: [studentId], references: [id])
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  studentId        String    @db.ObjectId
+  courseId         String?   @db.ObjectId
+  predictedGrade   String
+  riskLevel        RiskLevel
+  attendanceRate   Float
+  assignmentScore  Float
+  confidence       Float
+  recommendations  String[]
+  createdAt        DateTime  @default(now())
+
+  student User @relation(fields: [studentId], references: [id])
 
   @@map("predictions")
 }
 
 model FacultyCourse {
-  id        String   @id @default(cuid())
-  facultyId String
-  courseId  String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  facultyId String   @db.ObjectId
+  courseId  String   @db.ObjectId
   createdAt DateTime @default(now())
-  course    Course   @relation(fields: [courseId], references: [id])
-  faculty   User     @relation(fields: [facultyId], references: [id])
 
-  @@unique([facultyId, courseId])
+  faculty User   @relation(fields: [facultyId], references: [id])
+  course  Course @relation(fields: [courseId], references: [id])
+
   @@map("faculty_courses")
 }
 
 model LeaveApplication {
-  id                  String      @id @default(cuid())
-  studentId           String
+  id                  String      @id @default(auto()) @map("_id") @db.ObjectId
+  studentId           String      @db.ObjectId
   startDate           DateTime
   endDate             DateTime
   reason              String
@@ -228,17 +225,16 @@ model LeaveApplication {
   status              LeaveStatus @default(PENDING)
   facultyStatus       String?
   adminStatus         String?
-  facultyApprovedById String?
-  adminApprovedById   String?
+  facultyApprovedById String?     @db.ObjectId
+  adminApprovedById   String?     @db.ObjectId
   facultyApprovedAt   DateTime?
   adminApprovedAt     DateTime?
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
-  semesterId          String?
-  approvedByAdmin     User?       @relation("AdminApprovedLeaves", fields: [adminApprovedById], references: [id])
-  approvedByFaculty   User?       @relation("FacultyApprovedLeaves", fields: [facultyApprovedById], references: [id])
-  semester            Semester?   @relation(fields: [semesterId], references: [id])
-  student             User        @relation("StudentLeaves", fields: [studentId], references: [id])
+
+  student           User  @relation("StudentLeaves", fields: [studentId], references: [id])
+  approvedByFaculty User? @relation("FacultyApprovedLeaves", fields: [facultyApprovedById], references: [id])
+  approvedByAdmin   User? @relation("AdminApprovedLeaves", fields: [adminApprovedById], references: [id])
 
   @@map("leave_applications")
 }
