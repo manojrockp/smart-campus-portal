@@ -7,8 +7,8 @@ const prisma = new PrismaClient();
 // Health check endpoint
 router.get('/', async (req, res) => {
   try {
-    // Check database connection
-    await prisma.$queryRaw`SELECT 1`;
+    // Check database connection with MongoDB-compatible query
+    await prisma.user.findFirst();
     
     res.status(200).json({
       status: 'healthy',
