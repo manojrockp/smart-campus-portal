@@ -6,7 +6,7 @@ import { Toaster } from 'react-hot-toast'
 import axios from 'axios'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
-import api from './config/api.jsx'
+import api from './config/api.js'
 import './index.css'
 
 // Configure global axios defaults to match our api instance
