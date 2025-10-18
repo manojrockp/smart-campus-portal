@@ -11,7 +11,8 @@ const Chat = () => {
   const [selectedChat, setSelectedChat] = useState(null)
 
   useEffect(() => {
-    const newSocket = io('http://localhost:5000')
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://smart-campus-backend-w37b.onrender.com'
+    const newSocket = io(API_BASE_URL)
     setSocket(newSocket)
 
     newSocket.on('receive-message', (message) => {

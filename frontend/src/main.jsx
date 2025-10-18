@@ -9,7 +9,8 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import './index.css'
 
 // Configure axios base URL
-axios.defaults.baseURL = 'http://localhost:5000'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://smart-campus-backend-w37b.onrender.com'
+axios.defaults.baseURL = API_BASE_URL
 
 const queryClient = new QueryClient()
 
