@@ -38,7 +38,7 @@ const FacultyAssignments = () => {
   // Get all faculty members
   const { data: faculty, error: facultyError } = useQuery('faculty', async () => {
     console.log('Fetching faculty...')
-    const response = await api.get('/users?role=FACULTY')
+    const response = await api.get('/api/users?role=FACULTY')
     console.log('Faculty response:', response.data)
     return response.data
   }, {
@@ -51,7 +51,7 @@ const FacultyAssignments = () => {
   // Get all courses
   const { data: courses, error: coursesError } = useQuery('courses', async () => {
     console.log('Fetching courses...')
-    const response = await api.get('/courses')
+    const response = await api.get('/api/courses')
     console.log('Courses response:', response.data)
     return response.data
   }, {
@@ -64,7 +64,7 @@ const FacultyAssignments = () => {
   // Get faculty-course assignments
   const { data: assignments, isLoading, error: assignmentsError } = useQuery('faculty-assignments', async () => {
     console.log('Fetching assignments...')
-    const response = await api.get('/faculty-courses/assignments')
+    const response = await api.get('/api/faculty-courses/assignments')
     console.log('Assignments response:', response.data)
     return response.data
   }, {
@@ -76,7 +76,7 @@ const FacultyAssignments = () => {
 
   // Assign course to faculty
   const assignMutation = useMutation(
-    (data) => api.post('/faculty-courses/assign', data),
+    (data) => api.post('/api/faculty-courses/assign', data),
     {
       onSuccess: () => {
         queryClient.invalidateQueries('faculty-assignments')
@@ -93,7 +93,7 @@ const FacultyAssignments = () => {
 
   // Remove assignment
   const removeMutation = useMutation(
-    ({ facultyId, courseId }) => api.delete('/faculty-courses/unassign', { data: { facultyId, courseId } }),
+    ({ facultyId, courseId }) => api.delete('/api/faculty-courses/unassign', { data: { facultyId, courseId } }),
     {
       onSuccess: () => {
         queryClient.invalidateQueries('faculty-assignments')
