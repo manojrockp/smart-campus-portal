@@ -22,6 +22,7 @@ const leaveRoutes = require('./routes/leaves');
 const chatRoutes = require('./routes/chat');
 const analyticsRoutes = require('./routes/analytics');
 const seedRoutes = require('./routes/seed');
+const migrateRoutes = require('./routes/migrate');
 const { runSemesterTransition } = require('./jobs/semesterTransition');
 
 const app = express();
@@ -81,6 +82,7 @@ app.use('/api/leaves', leaveRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/seed', seedRoutes);
+app.use('/api/migrate', migrateRoutes);
 
 // Socket.io for real-time features
 io.on('connection', (socket) => {
