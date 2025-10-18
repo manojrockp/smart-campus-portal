@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import axios from 'axios'
 import api from '../config/api'
 
 const AuthContext = createContext()
@@ -19,6 +20,7 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token')
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       // Verify token and get user data
       fetchUser()
     } else {
@@ -48,6 +50,7 @@ export const AuthProvider = ({ children }) => {
       
       localStorage.setItem('token', token)
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       setUser(user)
       
       return user
@@ -64,6 +67,7 @@ export const AuthProvider = ({ children }) => {
     
     localStorage.setItem('token', token)
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
     setUser(user)
     
     return user
@@ -72,6 +76,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token')
     delete api.defaults.headers.common['Authorization']
+    delete axios.defaults.headers.common['Authorization']
     setUser(null)
   }
 

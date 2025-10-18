@@ -6,11 +6,18 @@ import { Toaster } from 'react-hot-toast'
 import axios from 'axios'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
+import api from './config/api.jsx'
 import './index.css'
 
-// Configure axios base URL
+// Configure global axios defaults to match our api instance
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://smart-campus-backend-w37b.onrender.com'
 axios.defaults.baseURL = API_BASE_URL
+
+// Set token if it exists
+const token = localStorage.getItem('token')
+if (token) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+}
 
 const queryClient = new QueryClient()
 
