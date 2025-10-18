@@ -71,3 +71,10 @@ temp/
 
 # Prisma
 prisma/migrations/
+
+# Large files and archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.tar
