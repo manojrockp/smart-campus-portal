@@ -27,7 +27,9 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:5173"],
+    origin: process.env.NODE_ENV === 'production'
+      ? ["https://smart-campus-portal-gamma.vercel.app", /https:\/\/.*\.vercel\.app$/]
+      : ["http://localhost:3000", "http://localhost:5173"],
     methods: ["GET", "POST"]
   }
 });
@@ -46,7 +48,7 @@ app.use(helmet({
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ["https://smartcampus-two.vercel.app", "https://smartcampus-git-main-manojs-projects-87d0f296.vercel.app", process.env.CORS_ORIGIN, process.env.FRONTEND_URL, /https:\/\/.*--smartcamps\.netlify\.app$/, /https:\/\/.*\.netlify\.app$/]
+    ? ["https://smart-campus-portal-gamma.vercel.app", "https://smartcampus-two.vercel.app", "https://smartcampus-git-main-manojs-projects-87d0f296.vercel.app", process.env.CORS_ORIGIN, process.env.FRONTEND_URL, /https:\/\/.*--smartcamps\.netlify\.app$/, /https:\/\/.*\.netlify\.app$/, /https:\/\/.*\.vercel\.app$/]
     : ["http://localhost:3000", "http://localhost:5173"],
   credentials: true
 }));
