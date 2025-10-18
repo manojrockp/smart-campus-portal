@@ -17,6 +17,8 @@ model User {
   role       Role
   studentId  String?  @unique
   employeeId String?  @unique
+  section    String?
+  year       Int?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
