@@ -103,33 +103,14 @@ router.post('/', auth, authorize('STUDENT'), async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // If no semester provided, get active academic year's semester
-    let finalSemesterId = semesterId;
-    if (!finalSemesterId) {
-      console.log('No semester provided, looking for active semester...');
-      
-      const activeYear = await prisma.academicYear.findFirst({
-        where: { isActive: true }
-      });
-      
-      console.log('Active year found:', activeYear);
-      
-      if (activeYear) {
-        const activeSemester = await prisma.semester.findFirst({
-          where: { year: activeYear.year },
-          orderBy: { createdAt: 'desc' }
-        });
-        console.log('Active semester found:', activeSemester);
-        finalSemesterId = activeSemester?.id;
-      }
-    }
-
+    // Set semester to null for now to avoid dependency issues
+    let finalSemesterId = null;
     console.log('Final semester ID:', finalSemesterId);
 
     const leave = await prisma.leaveApplication.create({
       data: {
         studentId: req.user.id,
-        semesterId: finalSemesterId,
+        // semesterId: finalSemesterId, // Temporarily removed
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         reason,
