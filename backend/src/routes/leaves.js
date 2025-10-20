@@ -110,7 +110,6 @@ router.post('/', auth, authorize('STUDENT'), async (req, res) => {
     const leave = await prisma.leaveApplication.create({
       data: {
         studentId: req.user.id,
-        // semesterId: finalSemesterId, // Temporarily removed
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         reason,
