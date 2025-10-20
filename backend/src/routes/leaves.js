@@ -138,7 +138,7 @@ router.post('/', auth, authorize('STUDENT'), async (req, res) => {
 });
 
 // Faculty approve leave
-router.put('/:id/faculty-approve', auth, authorize('FACULTY'), async (req, res) => {
+router.put('/:id/faculty-approve', auth, authorize('FACULTY', 'ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
     const { action } = req.body; // 'APPROVE' or 'REJECT'
