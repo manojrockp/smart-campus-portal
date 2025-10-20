@@ -70,6 +70,11 @@ const Attendance = () => {
         const lateCount = variables.filter(a => a.status === 'LATE').length
         const totalMarked = variables.length
         
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries(['attendance'])
+        queryClient.invalidateQueries(['attendance-calendar'])
+        queryClient.invalidateQueries(['attendance-report'])
+        
         // Success feedback with details
         toast.success(
           `✅ Attendance marked for ${totalMarked} students!\n✅ Present: ${presentCount} | ❌ Absent: ${absentCount} | ⏰ Late: ${lateCount}`,
