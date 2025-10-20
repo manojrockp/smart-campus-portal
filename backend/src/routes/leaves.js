@@ -67,12 +67,7 @@ router.get('/', auth, async (req, res) => {
             email: true
           }
         },
-        semester: {
-          select: {
-            name: true,
-            code: true
-          }
-        },
+
         approvedByFaculty: {
           select: {
             firstName: true,
@@ -150,12 +145,7 @@ router.post('/', auth, authorize('STUDENT'), async (req, res) => {
             email: true
           }
         },
-        semester: {
-          select: {
-            name: true,
-            code: true
-          }
-        }
+
       }
     });
 
