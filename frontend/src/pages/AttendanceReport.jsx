@@ -17,14 +17,14 @@ const AttendanceReport = () => {
   const { data: courses, error: coursesError } = useQuery('report-courses', async () => {
     try {
       if (user.role === 'STUDENT') {
-        const response = await api.get(`/enrollments/student/${user.id}`)
+        const response = await api.get(`/api/enrollments/student/${user.id}`)
         return response.data.map(e => e.course)
       } else if (user.role === 'FACULTY') {
-        const response = await api.get(`/faculty-courses/faculty/${user.id}`)
+        const response = await api.get(`/api/faculty-courses/faculty/${user.id}`)
         return response.data
       } else {
         // Admin - get all courses
-        const response = await api.get('/courses')
+        const response = await api.get('/api/courses')
         return response.data
       }
     } catch (error) {
@@ -38,7 +38,7 @@ const AttendanceReport = () => {
     ['course-students', selectedCourse],
     async () => {
       if (!selectedCourse || user.role === 'STUDENT') return []
-      const response = await api.get(`/enrollments/course/${selectedCourse}`)
+      const response = await api.get(`/api/enrollments/course/${selectedCourse}`)
       return response.data.map(e => e.user)
     },
     { enabled: !!selectedCourse && user.role !== 'STUDENT' }
@@ -60,7 +60,7 @@ const AttendanceReport = () => {
         }
         
         console.log('Fetching attendance with params:', params.toString())
-        const response = await api.get(`/attendance/calendar?${params}`)
+        const response = await api.get(`/api/attendance/calendar?${params}`)
         const data = response.data || []
         
         // Filter by date range

@@ -15,10 +15,10 @@ const AttendanceCalendar = () => {
   // Get user's courses
   const { data: courses } = useQuery('user-courses', async () => {
     if (user.role === 'STUDENT') {
-      const response = await api.get(`/enrollments/student/${user.id}`)
+      const response = await api.get(`/api/enrollments/student/${user.id}`)
       return response.data.map(e => e.course)
     } else {
-      const response = await api.get(`/faculty-courses/faculty/${user.id}`)
+      const response = await api.get(`/api/faculty-courses/faculty/${user.id}`)
       return response.data
     }
   })
@@ -39,7 +39,7 @@ const AttendanceCalendar = () => {
         params.append('courseId', selectedCourse)
       }
       
-      const response = await api.get(`/attendance/calendar?${params}`)
+      const response = await api.get(`/api/attendance/calendar?${params}`)
       return response.data
     }
   )
