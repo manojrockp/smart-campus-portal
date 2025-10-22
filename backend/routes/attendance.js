@@ -8,31 +8,46 @@ const prisma = new PrismaClient();
 // Mark attendance (Faculty only)
 router.post('/mark', auth, authorize('FACULTY', 'ADMIN'), async (req, res) => {
   try {
-    const { courseId, studentIds, date, status } = req.body;
+    const { courseId, studentIds, date, status, attendance } = req.body;
 
-    // Get course to find semester
-    const course = await prisma.course.findUnique({
-      where: { id: courseId },
-      select: { semesterId: true }
-    });
+    // For admin marking faculty attendance, courseId is optional
+    if (req.user.role !== 'ADMIN' && !courseId) {
+      return res.status(400).json({ message: 'Course ID is required for faculty' });
+    }
+
+    let course = null;
+    if (courseId) {
+      course = await prisma.course.findUnique({
+        where: { id: courseId },
+        select: { semesterId: true }
+      });
+    }
+
+    // Handle both old format (studentIds + status) and new format (attendance array)
+    let attendanceList = [];
+    if (attendance && Array.isArray(attendance)) {
+      attendanceList = attendance;
+    } else if (studentIds && Array.isArray(studentIds)) {
+      attendanceList = studentIds.map(id => ({ userId: id, status: status || 'PRESENT' }));
+    }
 
     const attendanceRecords = await Promise.all(
-      studentIds.map(studentId =>
+      attendanceList.map(({ userId, status: attendanceStatus }) =>
         prisma.attendance.upsert({
           where: {
             userId_courseId_date: {
-              userId: studentId,
-              courseId,
+              userId,
+              courseId: courseId || 'faculty-attendance',
               date: new Date(date)
             }
           },
-          update: { status },
+          update: { status: attendanceStatus },
           create: {
-            userId: studentId,
-            courseId,
+            userId,
+            courseId: courseId || 'faculty-attendance',
             semesterId: course?.semesterId,
             date: new Date(date),
-            status
+            status: attendanceStatus
           }
         })
       )

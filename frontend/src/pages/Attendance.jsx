@@ -58,11 +58,18 @@ const Attendance = () => {
 
   // Mark attendance mutation
   const markAttendanceMutation = useMutation(
-    (attendanceList) => axios.post('/api/attendance/mark', {
-      courseId: selectedCourse,
-      date: selectedDate,
-      attendance: attendanceList
-    }),
+    (attendanceList) => {
+      const payload = {
+        date: selectedDate,
+        attendance: attendanceList
+      }
+      
+      if (user.role !== 'ADMIN' && selectedCourse) {
+        payload.courseId = selectedCourse
+      }
+      
+      return axios.post('/api/attendance/mark', payload)
+    },
     {
       onSuccess: (response, variables) => {
         const presentCount = variables.filter(a => a.status === 'PRESENT').length
@@ -103,8 +110,8 @@ const Attendance = () => {
   }
 
   const handleSubmitAttendance = () => {
-    if (!selectedCourse || !selectedDate) {
-      toast.error('Please select course and date')
+    if ((user.role !== 'ADMIN' && !selectedCourse) || !selectedDate) {
+      toast.error(user.role === 'ADMIN' ? 'Please select date' : 'Please select course and date')
       return
     }
 
