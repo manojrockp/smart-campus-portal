@@ -24,7 +24,7 @@ import SemesterManagement from './pages/SemesterManagement'
 import DiagnosticTest from './pages/DiagnosticTest'
 import StudentSemesters from './pages/StudentSemesters'
 import SemesterHistory from './pages/SemesterHistory'
-import FacultyAttendance from './pages/FacultyAttendance'
+
 
 function App() {
   const { user, loading } = useAuth()
@@ -76,9 +76,7 @@ function App() {
         {(user.role === 'ADMIN' || user.role === 'FACULTY') && (
           <Route path="/semester-history" element={<SemesterHistory />} />
         )}
-        {user.role === 'ADMIN' && (
-          <Route path="/faculty-attendance" element={<FacultyAttendance />} />
-        )}
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

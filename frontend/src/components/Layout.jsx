@@ -64,7 +64,6 @@ const Layout = ({ children }) => {
         { name: 'Faculty', href: '/faculty', icon: Users },
         { name: 'Enrollments', href: '/enrollments', icon: Users },
         { name: 'Assign Courses', href: '/faculty-assignments', icon: Users },
-        { name: 'Faculty Attendance', href: '/faculty-attendance', icon: Calendar },
         { name: 'Notices', href: '/notices', icon: Bell },
         { name: 'Analytics', href: '/analytics', icon: BarChart3 },
         { name: 'Diagnostic', href: '/diagnostic', icon: BarChart3 },
