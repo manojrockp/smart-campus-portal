@@ -153,4 +153,38 @@ router.get('/course/:courseId', auth, authorize('FACULTY', 'ADMIN'), async (req,
   }
 });
 
+// Get all faculty attendance (Admin only)
+router.get('/faculty', auth, authorize('ADMIN'), async (req, res) => {
+  try {
+    const { date, facultyId } = req.query;
+
+    const whereClause = { 
+      courseId: null, // Faculty attendance has no course
+      user: { role: 'FACULTY' }
+    };
+    
+    if (date) whereClause.date = new Date(date);
+    if (facultyId) whereClause.userId = facultyId;
+
+    const attendance = await prisma.attendance.findMany({
+      where: whereClause,
+      include: {
+        user: { 
+          select: { 
+            firstName: true, 
+            lastName: true, 
+            employeeId: true,
+            email: true 
+          } 
+        }
+      },
+      orderBy: { date: 'desc' }
+    });
+
+    res.json(attendance);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router;
