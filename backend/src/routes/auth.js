@@ -3,6 +3,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const { auth, authorize } = require('../middleware/auth');
+const sessionAuth = require('../../middleware/sessionAuth');
+const Session = require('../../models/Session');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -143,6 +145,10 @@ router.post('/login', async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRE }
     );
 
+    // Create session
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    await Session.create(user.id, token, expiresAt);
+
     res.json({
       token,
       user: {
@@ -162,8 +168,28 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Logout
+router.post('/logout', sessionAuth, async (req, res) => {
+  try {
+    await Session.invalidate(req.session.token);
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Logout all sessions
+router.post('/logout-all', sessionAuth, async (req, res) => {
+  try {
+    await Session.invalidateAllUserSessions(req.user.id);
+    res.json({ message: 'All sessions logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Get current user
-router.get('/me', auth, async (req, res) => {
+router.get('/me', sessionAuth, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },

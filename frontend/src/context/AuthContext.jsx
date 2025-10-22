@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import axios from 'axios'
 import api from '../config/api'
+import SessionManager from '../utils/sessionManager'
 
 const AuthContext = createContext()
 
@@ -17,11 +18,10 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      // Verify token and get user data
+    SessionManager.initializeSession()
+    const user = SessionManager.getUser()
+    if (user && SessionManager.isAuthenticated()) {
+      setUser(user)
       fetchUser()
     } else {
       setLoading(false)
@@ -32,9 +32,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.get('/api/auth/me')
       setUser(response.data)
+      SessionManager.setSession(SessionManager.getToken(), response.data)
     } catch (error) {
-      localStorage.removeItem('token')
-      delete api.defaults.headers.common['Authorization']
+      SessionManager.clearSession()
+      setUser(null)
     } finally {
       setLoading(false)
     }
@@ -48,9 +49,7 @@ export const AuthProvider = ({ children }) => {
       
       const { token, user } = response.data
       
-      localStorage.setItem('token', token)
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      SessionManager.setSession(token, user)
       setUser(user)
       
       return user
@@ -73,10 +72,13 @@ export const AuthProvider = ({ children }) => {
     return user
   }
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    delete api.defaults.headers.common['Authorization']
-    delete axios.defaults.headers.common['Authorization']
+  const logout = async () => {
+    await SessionManager.logout()
+    setUser(null)
+  }
+
+  const logoutAll = async () => {
+    await SessionManager.logoutAll()
     setUser(null)
   }
 
@@ -85,6 +87,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    logoutAll,
     loading
   }
 
