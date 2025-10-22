@@ -34,6 +34,7 @@ router.post('/mark', auth, authorize('FACULTY', 'ADMIN'), async (req, res) => {
     const attendanceRecords = await Promise.all(
       attendanceList.map(async ({ userId, status: attendanceStatus }) => {
         const attendanceDate = new Date(date);
+        attendanceDate.setHours(0, 0, 0, 0);
         
         if (courseId) {
           // Regular course attendance with upsert
@@ -163,7 +164,17 @@ router.get('/faculty', auth, authorize('ADMIN'), async (req, res) => {
       user: { role: 'FACULTY' }
     };
     
-    if (date) whereClause.date = new Date(date);
+    if (date) {
+      const searchDate = new Date(date);
+      searchDate.setHours(0, 0, 0, 0);
+      const nextDay = new Date(searchDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      
+      whereClause.date = {
+        gte: searchDate,
+        lt: nextDay
+      };
+    }
     if (facultyId) whereClause.userId = facultyId;
 
     const attendance = await prisma.attendance.findMany({

@@ -81,6 +81,7 @@ const Attendance = () => {
         queryClient.invalidateQueries(['attendance'])
         queryClient.invalidateQueries(['attendance-calendar'])
         queryClient.invalidateQueries(['attendance-report'])
+        queryClient.invalidateQueries(['faculty-attendance'])
         
         // Success feedback with details
         toast.success(
