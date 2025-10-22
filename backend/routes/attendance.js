@@ -32,25 +32,56 @@ router.post('/mark', auth, authorize('FACULTY', 'ADMIN'), async (req, res) => {
     }
 
     const attendanceRecords = await Promise.all(
-      attendanceList.map(({ userId, status: attendanceStatus }) =>
-        prisma.attendance.upsert({
-          where: {
-            userId_courseId_date: {
+      attendanceList.map(async ({ userId, status: attendanceStatus }) => {
+        const attendanceDate = new Date(date);
+        
+        if (courseId) {
+          // Regular course attendance with upsert
+          return prisma.attendance.upsert({
+            where: {
+              userId_courseId_date: {
+                userId,
+                courseId,
+                date: attendanceDate
+              }
+            },
+            update: { status: attendanceStatus },
+            create: {
               userId,
-              courseId: courseId || 'faculty-attendance',
-              date: new Date(date)
+              courseId,
+              semesterId: course?.semesterId,
+              date: attendanceDate,
+              status: attendanceStatus
             }
-          },
-          update: { status: attendanceStatus },
-          create: {
-            userId,
-            courseId: courseId || 'faculty-attendance',
-            semesterId: course?.semesterId,
-            date: new Date(date),
-            status: attendanceStatus
+          });
+        } else {
+          // Faculty attendance without course - check if exists first
+          const existing = await prisma.attendance.findFirst({
+            where: {
+              userId,
+              courseId: null,
+              date: attendanceDate
+            }
+          });
+          
+          if (existing) {
+            return prisma.attendance.update({
+              where: { id: existing.id },
+              data: { status: attendanceStatus }
+            });
+          } else {
+            return prisma.attendance.create({
+              data: {
+                userId,
+                courseId: null,
+                semesterId: null,
+                date: attendanceDate,
+                status: attendanceStatus
+              }
+            });
           }
-        })
-      )
+        }
+      })
     );
 
     res.json({ message: 'Attendance marked successfully', records: attendanceRecords });

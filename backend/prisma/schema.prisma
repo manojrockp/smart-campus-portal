@@ -108,14 +108,14 @@ model Enrollment {
 model Attendance {
   id         String           @id @default(auto()) @map("_id") @db.ObjectId
   userId     String           @db.ObjectId
-  courseId   String           @db.ObjectId
+  courseId   String?          @db.ObjectId
   semesterId String?          @db.ObjectId
   date       DateTime
   status     AttendanceStatus
   createdAt  DateTime         @default(now())
 
   user     User      @relation(fields: [userId], references: [id])
-  course   Course    @relation(fields: [courseId], references: [id])
+  course   Course?   @relation(fields: [courseId], references: [id])
   semester Semester? @relation(fields: [semesterId], references: [id])
 
   @@map("attendance")
