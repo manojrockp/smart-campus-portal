@@ -72,14 +72,13 @@ router.post('/', auth, authorize('ADMIN'), async (req, res) => {
     
     console.log('Creating semester with data:', { name, code, year: yearInt, startDate, endDate });
 
-    // Ensure academic year exists and is active
+    // Ensure academic year exists
     let academicYear = await prisma.academicYear.findUnique({
       where: { year: yearInt }
     });
 
     if (!academicYear) {
-      // Create academic year if it doesn't exist
-      await prisma.academicYear.updateMany({ data: { isActive: false } });
+      // Create academic year if it doesn't exist (don't deactivate others)
       academicYear = await prisma.academicYear.create({
         data: {
           year: yearInt,
@@ -87,15 +86,18 @@ router.post('/', auth, authorize('ADMIN'), async (req, res) => {
           isActive: true
         }
       });
-      console.log('Created and activated academic year:', academicYear.name);
-    } else if (!academicYear.isActive) {
-      // Activate this year if not already active
-      await prisma.academicYear.updateMany({ data: { isActive: false } });
-      await prisma.academicYear.update({
-        where: { year: yearInt },
-        data: { isActive: true }
+      console.log('Created academic year:', academicYear.name);
+    }
+
+    // Check if semester with same code already exists
+    const existingSemester = await prisma.semester.findUnique({
+      where: { code }
+    });
+
+    if (existingSemester) {
+      return res.status(400).json({ 
+        message: `Semester with code '${code}' already exists. Please use a different code.` 
       });
-      console.log('Activated academic year:', academicYear.name);
     }
 
     const semester = await prisma.semester.create({
@@ -104,7 +106,8 @@ router.post('/', auth, authorize('ADMIN'), async (req, res) => {
         code,
         year: yearInt,
         startDate: new Date(startDate),
-        endDate: new Date(endDate)
+        endDate: new Date(endDate),
+        isActive: true // Allow multiple active semesters
       }
     });
 
@@ -113,7 +116,7 @@ router.post('/', auth, authorize('ADMIN'), async (req, res) => {
   } catch (error) {
     console.error('Semester creation error:', error);
     if (error.code === 'P2002') {
-      return res.status(400).json({ message: 'Semester code already exists' });
+      return res.status(400).json({ message: 'Semester code already exists. Please use a unique code.' });
     }
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -200,11 +203,6 @@ router.post('/years/:year/activate', auth, authorize('ADMIN'), async (req, res) 
     const yearInt = parseInt(year);
     
     console.log('Activating year:', yearInt);
-
-    // First, deactivate all years
-    await prisma.academicYear.updateMany({
-      data: { isActive: false }
-    });
 
     // Check if academic year exists, if not create it
     let activeYear = await prisma.academicYear.findUnique({
