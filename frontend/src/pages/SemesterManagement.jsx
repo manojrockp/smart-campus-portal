@@ -195,18 +195,7 @@ const SemesterManagement = () => {
       return
     }
     
-    // Check for overlapping semesters
-    const overlapping = semesters?.find(sem => {
-      if (editingSemester && sem.id === editingSemester.id) return false
-      const semStart = new Date(sem.startDate)
-      const semEnd = new Date(sem.endDate)
-      return (startDate <= semEnd && endDate >= semStart)
-    })
-    
-    if (overlapping) {
-      toast.error(`Dates overlap with ${overlapping.name}`)
-      return
-    }
+    // Backend will handle overlap validation based on semester type
     
     saveMutation.mutate(formData)
   }
@@ -322,6 +311,17 @@ const SemesterManagement = () => {
                     <option value="ODD">ODD (Semesters 1, 3, 5)</option>
                     <option value="EVEN">EVEN (Semesters 2, 4, 6)</option>
                   </select>
+                </div>
+                <div>
+                  <label className="form-label">Academic Year</label>
+                  <input
+                    type="number"
+                    value={formData.year}
+                    onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
+                    className="form-input"
+                    placeholder="e.g., 2025"
+                    required
+                  />
                 </div>
                 <div>
                   <label className="form-label">Start Date</label>
