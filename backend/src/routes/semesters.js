@@ -67,10 +67,15 @@ router.get('/active', auth, async (req, res) => {
 // Bulk create semesters (Admin only)
 router.post('/bulk', auth, authorize('ADMIN'), async (req, res) => {
   try {
-    const { type, year, startDate, endDate } = req.body; // type: 'odd' or 'even'
+    const { type, year, startDate, endDate } = req.body; // type: 'ODD' or 'EVEN'
     const yearInt = parseInt(year);
     
     console.log('Creating bulk semesters:', { type, year: yearInt, startDate, endDate });
+
+    // Validate semester type
+    if (!['EVEN', 'ODD'].includes(type)) {
+      return res.status(400).json({ message: 'Semester type must be EVEN or ODD' });
+    }
 
     // Ensure academic year exists
     let academicYear = await prisma.academicYear.findUnique({
@@ -88,7 +93,7 @@ router.post('/bulk', auth, authorize('ADMIN'), async (req, res) => {
     }
 
     const semesters = [];
-    const semesterNumbers = type === 'odd' ? [1, 3, 5] : [2, 4, 6];
+    const semesterNumbers = type === 'ODD' ? [1, 3, 5] : [2, 4, 6];
     
     for (const semNum of semesterNumbers) {
       const semesterCode = `SEM${semNum}-${yearInt}`;
@@ -104,6 +109,7 @@ router.post('/bulk', auth, authorize('ADMIN'), async (req, res) => {
           data: {
             name: semesterName,
             code: semesterCode,
+            type: type,
             year: yearInt,
             startDate: new Date(startDate),
             endDate: new Date(endDate),
@@ -127,10 +133,15 @@ router.post('/bulk', auth, authorize('ADMIN'), async (req, res) => {
 // Create semester (Admin only)
 router.post('/', auth, authorize('ADMIN'), async (req, res) => {
   try {
-    const { name, code, year, startDate, endDate } = req.body;
+    const { name, code, type, year, startDate, endDate } = req.body;
     const yearInt = parseInt(year);
     
-    console.log('Creating semester with data:', { name, code, year: yearInt, startDate, endDate });
+    console.log('Creating semester with data:', { name, code, type, year: yearInt, startDate, endDate });
+
+    // Validate semester type
+    if (!['EVEN', 'ODD'].includes(type)) {
+      return res.status(400).json({ message: 'Semester type must be EVEN or ODD' });
+    }
 
     // Ensure academic year exists
     let academicYear = await prisma.academicYear.findUnique({
@@ -138,7 +149,6 @@ router.post('/', auth, authorize('ADMIN'), async (req, res) => {
     });
 
     if (!academicYear) {
-      // Create academic year if it doesn't exist (don't deactivate others)
       academicYear = await prisma.academicYear.create({
         data: {
           year: yearInt,
@@ -160,16 +170,36 @@ router.post('/', auth, authorize('ADMIN'), async (req, res) => {
       });
     }
 
-    // No date overlap validation - allow all semesters to have overlapping dates
+    // Check date overlap within same semester type only
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    
+    const overlappingSemesters = await prisma.semester.findMany({
+      where: {
+        type: type, // Only check within same type (EVEN/ODD)
+        AND: [
+          { startDate: { lte: endDateObj } },
+          { endDate: { gte: startDateObj } }
+        ]
+      }
+    });
+
+    if (overlappingSemesters.length > 0) {
+      const conflictingSemester = overlappingSemesters[0];
+      return res.status(400).json({ 
+        message: `Date overlap detected with existing ${type} semester '${conflictingSemester.name}' (${conflictingSemester.code}). ${type} semesters cannot have overlapping dates.` 
+      });
+    }
 
     const semester = await prisma.semester.create({
       data: {
         name,
         code,
+        type,
         year: yearInt,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        isActive: true // Allow multiple active semesters
+        isActive: true
       }
     });
 

@@ -62,15 +62,16 @@ model Course {
 }
 
 model Semester {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  code      String   @unique
-  year      Int?
-  startDate DateTime
-  endDate   DateTime
-  isActive  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  code         String       @unique
+  type         SemesterType
+  year         Int?
+  startDate    DateTime
+  endDate      DateTime
+  isActive     Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   // Relations
   enrollments Enrollment[]
@@ -304,6 +305,11 @@ enum LeaveStatus {
   FACULTY_APPROVED
   APPROVED
   REJECTED
+}
+
+enum SemesterType {
+  EVEN
+  ODD
 }
 
 model Session {

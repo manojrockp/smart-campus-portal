@@ -14,6 +14,7 @@ const SemesterManagement = () => {
   const [formData, setFormData] = useState({
     name: '',
     code: '',
+    type: 'ODD', // Default to ODD
     year: new Date().getFullYear(),
     startDate: '',
     endDate: ''
@@ -151,6 +152,7 @@ const SemesterManagement = () => {
     setFormData({
       name: '',
       code: '',
+      type: 'ODD',
       year: new Date().getFullYear(),
       startDate: '',
       endDate: ''
@@ -162,6 +164,7 @@ const SemesterManagement = () => {
     setFormData({
       name: semester.name,
       code: semester.code,
+      type: semester.type || 'ODD',
       year: semester.year,
       startDate: semester.startDate.split('T')[0],
       endDate: semester.endDate.split('T')[0]
@@ -309,6 +312,18 @@ const SemesterManagement = () => {
                   />
                 </div>
                 <div>
+                  <label className="form-label">Semester Type</label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                    className="form-input"
+                    required
+                  >
+                    <option value="ODD">ODD (Semesters 1, 3, 5)</option>
+                    <option value="EVEN">EVEN (Semesters 2, 4, 6)</option>
+                  </select>
+                </div>
+                <div>
                   <label className="form-label">Start Date</label>
                   <input
                     type="date"
@@ -393,7 +408,7 @@ const SemesterManagement = () => {
                             )}
                           </h4>
                           <p className="text-sm text-gray-600">
-                            {semester.code} • Year {semester.year} • {new Date(semester.startDate).toLocaleDateString()} - {new Date(semester.endDate).toLocaleDateString()}
+                            {semester.code} • {semester.type || 'N/A'} • Year {semester.year} • {new Date(semester.startDate).toLocaleDateString()} - {new Date(semester.endDate).toLocaleDateString()}
                           </p>
                           <p className="text-xs text-gray-500">
                             {semester._count.courses} courses • {semester._count.enrollments} enrollments
