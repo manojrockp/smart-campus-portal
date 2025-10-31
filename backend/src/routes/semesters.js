@@ -100,29 +100,41 @@ router.post('/', auth, authorize('ADMIN'), async (req, res) => {
       });
     }
 
-    // Check for date overlaps within the same academic year only
-    const startDateObj = new Date(startDate);
-    const endDateObj = new Date(endDate);
+    // Extract semester number from name (e.g., "Semester 1" -> 1)
+    const semesterMatch = name.match(/semester\s*(\d+)/i);
+    const currentSemesterNum = semesterMatch ? parseInt(semesterMatch[1]) : null;
     
-    const overlappingSemesters = await prisma.semester.findMany({
-      where: {
-        year: yearInt, // Only check within same academic year
-        OR: [
-          {
-            AND: [
-              { startDate: { lte: endDateObj } },
-              { endDate: { gte: startDateObj } }
-            ]
-          }
-        ]
-      }
-    });
-
-    if (overlappingSemesters.length > 0) {
-      const conflictingSemester = overlappingSemesters[0];
-      return res.status(400).json({ 
-        message: `Date overlap detected with existing semester '${conflictingSemester.name}' (${conflictingSemester.code}) in the same academic year ${yearInt}. Please choose different dates.` 
+    if (currentSemesterNum) {
+      // Check for date overlaps only with semesters of same parity (odd/even)
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      
+      const overlappingSemesters = await prisma.semester.findMany({
+        where: {
+          year: yearInt,
+          AND: [
+            { startDate: { lte: endDateObj } },
+            { endDate: { gte: startDateObj } }
+          ]
+        }
       });
+
+      // Filter to check only same parity semesters (odd with odd, even with even)
+      const conflictingSemesters = overlappingSemesters.filter(semester => {
+        const existingMatch = semester.name.match(/semester\s*(\d+)/i);
+        if (!existingMatch) return true; // If can't parse, consider it a conflict
+        
+        const existingSemesterNum = parseInt(existingMatch[1]);
+        // Check if both are odd or both are even
+        return (currentSemesterNum % 2) === (existingSemesterNum % 2);
+      });
+
+      if (conflictingSemesters.length > 0) {
+        const conflictingSemester = conflictingSemesters[0];
+        return res.status(400).json({ 
+          message: `Date overlap detected with existing ${conflictingSemester.name} (${conflictingSemester.code}) in the same academic year ${yearInt}. Odd semesters (1,3,5) and even semesters (2,4,6) can overlap, but semesters of the same type cannot.` 
+        });
+      }
     }
 
     const semester = await prisma.semester.create({
