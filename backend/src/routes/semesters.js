@@ -100,6 +100,31 @@ router.post('/', auth, authorize('ADMIN'), async (req, res) => {
       });
     }
 
+    // Check for date overlaps within the same academic year only
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    
+    const overlappingSemesters = await prisma.semester.findMany({
+      where: {
+        year: yearInt, // Only check within same academic year
+        OR: [
+          {
+            AND: [
+              { startDate: { lte: endDateObj } },
+              { endDate: { gte: startDateObj } }
+            ]
+          }
+        ]
+      }
+    });
+
+    if (overlappingSemesters.length > 0) {
+      const conflictingSemester = overlappingSemesters[0];
+      return res.status(400).json({ 
+        message: `Date overlap detected with existing semester '${conflictingSemester.name}' (${conflictingSemester.code}) in the same academic year ${yearInt}. Please choose different dates.` 
+      });
+    }
+
     const semester = await prisma.semester.create({
       data: {
         name,
