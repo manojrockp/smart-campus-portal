@@ -31,10 +31,18 @@ router.post('/assign', auth, authorize('ADMIN'), async (req, res) => {
 router.delete('/unassign', auth, authorize('ADMIN'), async (req, res) => {
   try {
     const { facultyId, courseId } = req.body;
+    
+    console.log('Unassign request:', { facultyId, courseId });
+
+    if (!facultyId || !courseId) {
+      return res.status(400).json({ message: 'Faculty ID and Course ID are required' });
+    }
 
     const assignment = await prisma.facultyCourse.findFirst({
       where: { facultyId, courseId }
     });
+
+    console.log('Found assignment:', assignment);
 
     if (!assignment) {
       return res.status(404).json({ message: 'Assignment not found' });
@@ -46,6 +54,7 @@ router.delete('/unassign', auth, authorize('ADMIN'), async (req, res) => {
 
     res.json({ message: 'Course assignment removed successfully' });
   } catch (error) {
+    console.error('Unassign error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
