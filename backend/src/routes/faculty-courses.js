@@ -32,8 +32,16 @@ router.delete('/unassign', auth, authorize('ADMIN'), async (req, res) => {
   try {
     const { facultyId, courseId } = req.body;
 
+    const assignment = await prisma.facultyCourse.findFirst({
+      where: { facultyId, courseId }
+    });
+
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+
     await prisma.facultyCourse.delete({
-      where: { facultyId_courseId: { facultyId, courseId } }
+      where: { id: assignment.id }
     });
 
     res.json({ message: 'Course assignment removed successfully' });
