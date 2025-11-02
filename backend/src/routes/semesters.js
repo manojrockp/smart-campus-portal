@@ -170,8 +170,27 @@ router.post('/', auth, authorize('ADMIN'), async (req, res) => {
       });
     }
 
-    // No date overlap validation needed - ODD semesters (1,3,5) run simultaneously
-    // EVEN semesters (2,4,6) run simultaneously with different dates than ODD
+    // Check date overlap between different semester types (EVEN vs ODD)
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    
+    const overlappingSemesters = await prisma.semester.findMany({
+      where: {
+        type: { not: type }, // Check opposite type (EVEN vs ODD)
+        AND: [
+          { startDate: { lte: endDateObj } },
+          { endDate: { gte: startDateObj } }
+        ]
+      }
+    });
+
+    if (overlappingSemesters.length > 0) {
+      const conflictingSemester = overlappingSemesters[0];
+      const oppositeType = type === 'ODD' ? 'EVEN' : 'ODD';
+      return res.status(400).json({ 
+        message: `Date overlap detected with existing ${oppositeType} semester '${conflictingSemester.name}' (${conflictingSemester.code}). ${type} and ${oppositeType} semesters cannot have overlapping dates.` 
+      });
+    }
 
     const semester = await prisma.semester.create({
       data: {
