@@ -25,6 +25,7 @@ const seedRoutes = require('./routes/seed');
 const migrateRoutes = require('./routes/migrate');
 const { runSemesterTransition } = require('./jobs/semesterTransition');
 const { startSessionCleanup } = require('./jobs/sessionCleanup');
+const semesterCleanupJob = require('./jobs/semesterCleanup');
 
 const app = express();
 const server = createServer(app);
@@ -132,6 +133,9 @@ server.listen(PORT, '0.0.0.0', () => {
   
   // Start session cleanup job
   startSessionCleanup();
+  
+  // Start semester cleanup job
+  semesterCleanupJob.start();
   
   // Schedule semester transition check every day at midnight
   setInterval(() => {
